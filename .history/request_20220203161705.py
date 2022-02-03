@@ -26,13 +26,9 @@ region_url='{baURL}/regions?includeCities={reg}'.format(baURL=base_url,reg='true
 ping_headers = {'Accept': 'text/plain'}
 ping_response = requests.get(ping_url, headers=ping_headers).content
 #print("Now pinging the API via" + ping_url)
-print(ping_response)
+#print(ping_response)
 
-print('-------------------')
-print(region_url)
-regions=requests.get(region_url, headers=ping_headers)
-print(type(regions))
-#print(len(regions))
+
+regions=requests.get(region_url, headers=ping_headers).content
 #regions=requests.get(region_url, headers=ping_headers).json()
 print(regions)
-print(regions[[0]])

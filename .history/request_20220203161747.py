@@ -29,10 +29,7 @@ ping_response = requests.get(ping_url, headers=ping_headers).content
 print(ping_response)
 
 print('-------------------')
-print(region_url)
-regions=requests.get(region_url, headers=ping_headers)
-print(type(regions))
-#print(len(regions))
+
+regions=requests.get(region_url, headers=ping_headers).c
 #regions=requests.get(region_url, headers=ping_headers).json()
 print(regions)
-print(regions[[0]])

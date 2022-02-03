@@ -16,23 +16,14 @@ base_url='https://api.e-control.at/sprit/1.0'
 
 ping_url = '{baURL}/ping'.format(baURL=base_url)
 
+def my_function():
+    a=5
+    return(a)
 
-#regions
-#build-url
-region_url='{baURL}/regions?includeCities={reg}'.format(baURL=base_url,reg='true')
 
-#print(my_funct())
+print(my_function)
 # print(ping_url)
 ping_headers = {'Accept': 'text/plain'}
 ping_response = requests.get(ping_url, headers=ping_headers).content
-#print("Now pinging the API via" + ping_url)
+print("Now pinging the API via" + ping_url)
 print(ping_response)
-
-print('-------------------')
-print(region_url)
-regions=requests.get(region_url, headers=ping_headers)
-print(type(regions))
-#print(len(regions))
-#regions=requests.get(region_url, headers=ping_headers).json()
-print(regions)
-print(regions[[0]])

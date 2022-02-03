@@ -19,7 +19,7 @@ ping_url = '{baURL}/ping'.format(baURL=base_url)
 
 #regions
 #build-url
-region_url='{baURL}/regions?includeCities={reg}'.format(baURL=base_url,reg='true')
+region_url='{baURL}/regions?includeCities={reg}'.format(baURL=base_url,reg='false')
 
 #print(my_funct())
 # print(ping_url)
@@ -29,10 +29,7 @@ ping_response = requests.get(ping_url, headers=ping_headers).content
 print(ping_response)
 
 print('-------------------')
-print(region_url)
-regions=requests.get(region_url, headers=ping_headers)
-print(type(regions))
-#print(len(regions))
+
+regions=requests.get(region_url, headers=ping_headers).content
 #regions=requests.get(region_url, headers=ping_headers).json()
 print(regions)
-print(regions[[0]])
