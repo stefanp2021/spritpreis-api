@@ -22,13 +22,11 @@ ping_response=requests.get(ping_url, headers=request_headers).content
 
 #Regions
 regions_url = 'https://api.e-control.at/sprit/1.0/regions'
-includecities = input("Include Cities? Y/N ")
-Cities = 0
-if includecities == ("Y") : 
-    regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
-elif includecities == ("N") : 
-    regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=false'
+includecities = input("Include Cities? Y/N")
+if includecities == ("Y")
+param_includeCities == 1
+elif includecities ==("N")
 regions_response=requests.get(regions_url, headers=request_headers).content
-print("Now calling the API via" + regions_url)
+print("Now pinging the API via" + regions_url)
 print(regions_response)
- 
+
