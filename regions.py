@@ -25,26 +25,34 @@ regions=json.dumps(regions_response)
 df_regions_sprit = pd.DataFrame(columns=("code","type"))
 
 complete_dataset=json_normalize(regions_response)
-b=complete_dataset.loc[2]
-dataset_bezirke=b["subRegions"]
-#d=json.dumps(c)
-d=dataset_bezirke[0]
-#print(d.keys())
-#print(d.values())
-#print(d)
-#print(c[0])
-print(len(dataset_bezirke))
-for i in range(len(dataset_bezirke)):
-    regions = dataset_bezirke[i]
-    #print(regions['type'])
-    #print('-----')
-    regions_code=regions['code']
-    regions_type=regions['type']
-    lstr=[[regions_code,regions_type]]
-    df_new_entry=pd.DataFrame(lstr,columns=("code","type"))
-    #print(df_new_entry)
-    frames=[df_regions_sprit,df_new_entry]
-    df_regions_sprit=pd.concat(frames)
+
+print(complete_dataset)
+
+for j in range(len(complete_dataset)):
+
+    df_Bundesland = complete_dataset.loc[j]
+    df_Bundesland_subregion =df_Bundesland["subRegions"]
+
+    print(df_Bundesland_subregion)
+
+    #for k in range(len(df_Bundesland_subregion)):
+    #df_Bezirke_Gesamt = df_Bundesland_subregion[k]
+    #print("----")
+    #print(df_Bezirke_Gesamt['code'])
     
+    
+    for i in range(len(df_Bundesland_subregion)):
+        regions = df_Bundesland_subregion[i]
+        #print(regions['type'])
+        #print('-----')
+        regions_code=regions['code']
+        regions_type=regions['type']
+        lstr=[[regions_code,regions_type]]
+        df_new_entry=pd.DataFrame(lstr,columns=("code","type"))
+        #print(df_new_entry)
+        frames=[df_regions_sprit,df_new_entry]
+        df_regions_sprit=pd.concat(frames)
+    
+df_regions_sprit.reset_index(inplace=True,drop=True)
 print(df_regions_sprit)
    
