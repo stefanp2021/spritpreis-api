@@ -1,7 +1,6 @@
 #docs https://api.e-control.at/sprit/1.0/doc/index.html?url=https://api.e-control.at/sprit/1.0/api-docs%3Fgroup%3Dpublic-api#/
 from email import header
 import json
-from operator import index
 import pathlib
 import re
 from unittest import result
@@ -30,9 +29,8 @@ if includecities == ("Y") :
     regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
 elif includecities == ("N") : 
     regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=false'
-regions_response=requests.get(regions_url, headers=request_region_headers).json()
-filename=Path("regions.json")
-print("Now calling the API via " + regions_url)
-#print(regions_response)
-a=json.dumps(regions_response)
-a
+regions_response=requests.get(regions_url, headers=request_region_headers).json_normalize()
+#filename=Path("regions.csv")
+print("Now calling the API via" + regions_url)
+print(regions_response)
+#regions_response.to_csv(filename)
