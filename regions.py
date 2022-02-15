@@ -336,14 +336,14 @@ print("Finished Code Search, now we search for Stations")
 
 
 #Test if Abfrage have two resulst
-
 import time
-time.sleep(30)
 
+
+### Nur zum Testen ob es unterschiede zu den läufen gibt
 for iq in range(2):
     print(iq)
 
-
+    time.sleep(30)
 
     header_all_sprit = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "fuelType","amount","label","Type","code"] 
     header_all_sprit_withoutpreis = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "prices"] 
