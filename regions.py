@@ -530,6 +530,10 @@ for i in range(len(df_whole_sprit_PLZ_range)):
 # Now create Object and fill the sql
 #print("-#------#--###--#--#--####----##---#-##-----#-##--#----#-#---###-------#-#-#--#--##----#----#----#--#-----###---#------#-#-###---")
 #
+
+counter_Update=0
+counter_Insert=0
+
 for i in range(len(df_whole_sprit)):
     #print(i)
     df_Station_Single = df_whole_sprit.iloc[i,:]
@@ -578,33 +582,27 @@ for i in range(len(df_whole_sprit)):
 
 
     obj_Station.FuelId = obj_Station.GetFuelTypeID(mydb)[0][0]
-    #func_dump(obj_Station)
     obj_Station.PLZId = obj_Station.GetPlzID(mydb)[0][0]
     obj_Station.RegionId = obj_Station.GetRegionID(mydb)[0][0]  
 
 
-
-
     count_object_station = obj_Station.AskCountStation(mydb)
 
-    if(id == 1448506):
-        func_dump(obj_Station)
-        print(count_object_station)
-    #print("###############################################################")
-
- 
-
- 
-
     if(count_object_station[0][0] < 1):
+        counter_Insert = counter_Insert + 1
+        func_dump(obj_Station)
         obj_Station.InsertSQLOperator(mydb)
+        print('---------------------------------------------')
     else:
+        counter_Update = counter_Update + 1
         obj_Station.UpdateSQLOperator(mydb)
     
     del obj_Station
 
-
-
+print(" Insert ")
+print(counter_Insert)
+print("Update")
+print(counter_Update)
 
 
 

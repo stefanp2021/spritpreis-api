@@ -157,9 +157,9 @@ class Station:
 
     def UpdateSQLOperator(self,connector):
         mycursor = connector.cursor()
-        sql = "UPDATE tbl_Station SET station_name=%s, station_adress=%s, Plz_Id =%s ,latitiude=%s ,longitude =%s,telephone =%s,mail =%s,website=%s,service=%s,selfService=%s,open=%s,fueltype_Id=%s,amount=%s,label=%s,Region_Id=%s, Type=%s WHERE StationID=%s"
+        sql = "UPDATE tbl_Station SET station_name=%s, station_adress=%s, Plz_Id =%s ,latitiude=%s ,longitude =%s,telephone =%s,mail =%s,website=%s,service=%s,selfService=%s,open=%s,fueltype_Id=%s,amount=%s,label=%s,Region_Id=%s, Type=%s WHERE StationID=%s AND fueltype_Id=%s AND Type=%s"
         val = (self.name, self.address, self.PLZId, self.latitude, self.longitude, self.telephone, self.mail, self.website, self.service, self.selfService,
-        self.open, self.FuelId, self.amount, self.label, self.RegionId,self.type, self.id)
+        self.open, self.FuelId, self.amount, self.label, self.RegionId,self.type, self.id, self.FuelId, self.type)
         mycursor.execute(sql,val)
         connector.commit()
 
