@@ -335,277 +335,302 @@ print("Finished Code Search, now we search for Stations")
 #print(df_regions_complete_Type)
 
 
-header_all_sprit = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "fuelType","amount","label","Type","code"] 
-header_all_sprit_withoutpreis = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "prices"] 
-df_whole_sprit = pd.DataFrame(columns=(header_all_sprit))
+#Test if Abfrage have two resulst
 
-get_header_for_all_regions = list(df_regions_complete_Type.columns)
-get_code_for_regions = list(df_regions_complete_Type[get_header_for_all_regions[0]])
-#print(get_code_for_regions)
-    
-#gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(101),type_pb="PB",fueltype="GAS")
-#gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
-#request_gas_headers = {'Accept': 'application/json'}
-#gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
-#gas=json.dumps(gas_response)
-#complete_dataset_gas=json_normalize(gas_response)
+import time
+time.sleep(30)
 
-#print(complete_dataset_gas.keys())
-
-
-#print(df_whole_sprit)
-#########################
+for iq in range(2):
+    print(iq)
 
 
 
+    header_all_sprit = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "fuelType","amount","label","Type","code"] 
+    header_all_sprit_withoutpreis = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "prices"] 
+    df_whole_sprit = pd.DataFrame(columns=(header_all_sprit))
 
-mycursor = mydb.cursor()
-sql = "SELECT fueltype FROM tbl_fueltype"
-mycursor.execute(sql)
-myresultFuel_count = mycursor.fetchall()
-mydb.commit()
-
-
-lst_Type = ["PB","BL"]
-
-
-for k in get_code_for_regions:
-
-    for Insert_type in lst_Type:
-
-        for fut in myresultFuel_count:
-            
-            ft = fut[0]
-
-            gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(k),type_pb=Insert_type,fueltype=ft)
-            #gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
-            request_gas_headers = {'Accept': 'application/json'}
-            gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
-            gas=json.dumps(gas_response)
-            complete_dataset_gas=json_normalize(gas_response)
-
-            lst_adding = []
-            #list_var_select_header = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open","prices.fuelType","prices.amount","prices.label"]
-
-            #NaNvalues = [np.nan] * len(header_all_sprit)
-            NaNvalues = [None] * len(header_all_sprit)
-            df_new_test = pd.DataFrame([NaNvalues],columns=(header_all_sprit))
-            #print(df_new_test)
-
+    get_header_for_all_regions = list(df_regions_complete_Type.columns)
+    get_code_for_regions = list(df_regions_complete_Type[get_header_for_all_regions[0]])
+    #print(get_code_for_regions)
         
-            #print(complete_dataset_gas)
-            if not complete_dataset_gas.empty:
-                #print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSS")
-            
-                #print(k)
-                #print(complete_dataset_gas)
+    #gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(101),type_pb="PB",fueltype="GAS")
+    #gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+    #request_gas_headers = {'Accept': 'application/json'}
+    #gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
+    #gas=json.dumps(gas_response)
+    #complete_dataset_gas=json_normalize(gas_response)
+
+    #print(complete_dataset_gas.keys())
+
+
+    #print(df_whole_sprit)
+    #########################
+
+
+
+
+    mycursor = mydb.cursor()
+    sql = "SELECT fueltype FROM tbl_fueltype"
+    mycursor.execute(sql)
+    myresultFuel_count = mycursor.fetchall()
+    mydb.commit()
+
+
+    lst_Type = ["PB","BL"]
+
+
+
+    for k in get_code_for_regions:
+
+        for Insert_type in lst_Type:
+
+            for fut in myresultFuel_count:
                 
-                #Now we have to look how many rows there are
+                ft = fut[0]
 
-                length_dataSet_Fuel = complete_dataset_gas.shape[0]
+                gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(k),type_pb=Insert_type,fueltype=ft)
+                #gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+                request_gas_headers = {'Accept': 'application/json'}
+                gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
+                gas=json.dumps(gas_response)
+                complete_dataset_gas=json_normalize(gas_response)
+
+                lst_adding = []
+                #list_var_select_header = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open","prices.fuelType","prices.amount","prices.label"]
+
+                #NaNvalues = [np.nan] * len(header_all_sprit)
+                NaNvalues = [None] * len(header_all_sprit)
+                df_new_test = pd.DataFrame([NaNvalues],columns=(header_all_sprit))
+                #print(df_new_test)
+
+            
                 #print(complete_dataset_gas)
-                #print(length_dataSet_Fuel)
-                #print("---------------------------------------")
-                for r in range(length_dataSet_Fuel):
-                    #print(r)
-                    #print("---------------              STAGE 1             --------------------------")
-                    df_single_dataset_gas_g = complete_dataset_gas.iloc[r,:]
-                    df_single_dataset_gas = df_single_dataset_gas_g
-                    #print(type(df_single_dataset_gas))
-                    #print(df_single_dataset_gas)
-                    #print('---')
-                    #print(df_single_dataset_gas.columns.values)
-                    #print(df_single_dataset_gas.columns)
-                    #print(df_single_dataset_gas)
-                    #print("--")
-                    #print(df_single_dataset_gas["prices"])
-                    #print("-----------------------------------------")
-                    for i in range(len(header_all_sprit_withoutpreis)):
-                       
-                        reiter_name = header_all_sprit_withoutpreis[i]
-                        #print(reiter_name)
-                        #print(reiter_name)
-                        #print("---------------              STAGE 2             --------------------------")
-                        # Look if the column even exists in the dataframe
-                        if reiter_name in complete_dataset_gas.columns:
+                if not complete_dataset_gas.empty:
+                    #print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSS")
+                
+                    #print(k)
+                    #print(complete_dataset_gas)
+                    
+                    #Now we have to look how many rows there are
 
-                            #print("---------------              STAGE 3             --------------------------")
-                            #print(df_single_dataset_gas[reiter_name])
-                            var = df_single_dataset_gas[reiter_name]
-                            #print(var)
-                            if(type(var) is np.bool_):
-                                var = str(var)
-                            else:
-                                pass
+                    length_dataSet_Fuel = complete_dataset_gas.shape[0]
+                    #print(complete_dataset_gas)
+                    #print(length_dataSet_Fuel)
+                    #print("---------------------------------------")
+                    for r in range(length_dataSet_Fuel):
+                        #print(r)
+                        #print("---------------              STAGE 1             --------------------------")
+                        df_single_dataset_gas_g = complete_dataset_gas.iloc[r,:]
+                        df_single_dataset_gas = df_single_dataset_gas_g
+                        #print(type(df_single_dataset_gas))
+                        #print(df_single_dataset_gas)
+                        #print('---')
+                        #print(df_single_dataset_gas.columns.values)
+                        #print(df_single_dataset_gas.columns)
+                        #print(df_single_dataset_gas)
+                        #print("--")
+                        #print(df_single_dataset_gas["prices"])
+                        #print("-----------------------------------------")
+                        for i in range(len(header_all_sprit_withoutpreis)):
+                        
+                            reiter_name = header_all_sprit_withoutpreis[i]
+                            #print(reiter_name)
+                            #print(reiter_name)
+                            #print("---------------              STAGE 2             --------------------------")
+                            # Look if the column even exists in the dataframe
+                            if reiter_name in complete_dataset_gas.columns:
 
-                            #print("reiter:   {a},   Value :    {b}    ".format(a = reiter_name, b = var))
-                            #print("---------------------------------------------------------------")
-                            if(reiter_name == header_all_sprit_withoutpreis[-1]):
-
-                                #print("---------------              STAGE 4             --------------------------")
-                                #print(reiter_name)
-                                #prices = var[0][0]
-                                #print(k)
-
-                                var = df_single_dataset_gas[str(reiter_name)]
+                                #print("---------------              STAGE 3             --------------------------")
+                                #print(df_single_dataset_gas[reiter_name])
+                                var = df_single_dataset_gas[reiter_name]
                                 #print(var)
-                                var_intro_keys = var[0]
-                                
-                                #print(var_intro_keys)
-                                var_prices_with_keys = var_intro_keys
-                                list_of_keys = list(var_prices_with_keys.keys())
-                                for j in list_of_keys:
+                                if(type(var) is np.bool_):
+                                    var = str(var)
+                                else:
+                                    pass
 
-                                    prices_key_value = var_prices_with_keys[j]
-                                    df_new_test_single = pd.DataFrame(data=[prices_key_value],columns=[j],index=[0])
+                                #print("reiter:   {a},   Value :    {b}    ".format(a = reiter_name, b = var))
+                                #print("---------------------------------------------------------------")
+                                if(reiter_name == header_all_sprit_withoutpreis[-1]):
+
+                                    #print("---------------              STAGE 4             --------------------------")
+                                    #print(reiter_name)
+                                    #prices = var[0][0]
+                                    #print(k)
+
+                                    var = df_single_dataset_gas[str(reiter_name)]
+                                    #print(var)
+                                    var_intro_keys = var[0]
+                                    
+                                    #print(var_intro_keys)
+                                    var_prices_with_keys = var_intro_keys
+                                    list_of_keys = list(var_prices_with_keys.keys())
+                                    for j in list_of_keys:
+
+                                        prices_key_value = var_prices_with_keys[j]
+                                        df_new_test_single = pd.DataFrame(data=[prices_key_value],columns=[j],index=[0])
+                                        df_new_test.update(df_new_test_single)
+                                        #print(df_new_test)
+                                    
+                                else:
+
+                                    #print("---------------              STAGE 5             --------------------------")
+                                    #pass
+                                    #print("---------------------------------------------------------------")
+                                    #print(df_new_test)
+                                    df_new_test_single = pd.DataFrame(data=[var],columns=[reiter_name],index=[0])
                                     df_new_test.update(df_new_test_single)
                                     #print(df_new_test)
+                                    ### Here now we have to include the Type from the API request --> PB or BP
+
+
                                 
+                                df_new_test_Type = pd.DataFrame(data=[Insert_type],columns=["Type"],index=[0])
+                                df_new_test.update(df_new_test_Type)
+                                #print(df_new_test)
+                                df_new_test_code = pd.DataFrame(data=[str(k)],columns=["code"],index=[0])
+                                df_new_test.update(df_new_test_code)
+                                #print(df_new_test)
+                                #print('-----------------------------------------------------')
+                                #print(df_new_test)
+
                             else:
-
-                                #print("---------------              STAGE 5             --------------------------")
-                                #pass
-                                #print("---------------------------------------------------------------")
-                                #print(df_new_test)
-                                df_new_test_single = pd.DataFrame(data=[var],columns=[reiter_name],index=[0])
-                                df_new_test.update(df_new_test_single)
-                                #print(df_new_test)
-                                ### Here now we have to include the Type from the API request --> PB or BP
-
-
+                                pass
                             
-                            df_new_test_Type = pd.DataFrame(data=[Insert_type],columns=["Type"],index=[0])
-                            df_new_test.update(df_new_test_Type)
-                            #print(df_new_test)
-                            df_new_test_code = pd.DataFrame(data=[str(k)],columns=["code"],index=[0])
-                            df_new_test.update(df_new_test_code)
-                            #print(df_new_test)
-                            #print('-----------------------------------------------------')
-                            #print(df_new_test)
 
-                        else:
-                            pass
-                        
+                        frames = [df_whole_sprit, df_new_test]
+                        df_whole_sprit = pd.concat(frames)
 
-                    frames = [df_whole_sprit, df_new_test]
-                    df_whole_sprit = pd.concat(frames)
+            
+                #DataFrame is empty
+                else:
+                    pass
 
+    print(df_whole_sprit)
+
+
+
+
+    # The next additional way to bring new PLZ into the SQL table because the API-request is just SHIT 
+
+    df_whole_sprit_PLZ_range = df_whole_sprit[[header_all_sprit[3],header_all_sprit[4]]]
+    #print(df_whole_sprit_PLZ_range)
+
+    for i in range(len(df_whole_sprit_PLZ_range)):
+        #print(i)
+        df_units_sprit_Single = df_whole_sprit_PLZ_range.iloc[i,:]
+
+        #print(df_units_sprit_Single)
+
+        df_units_sprit_Single_PLZ = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[0]]
+        df_units_sprit_Single_Location = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[1]]
+
+        #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+        obj_Location = Location(postCode=df_units_sprit_Single_PLZ, location=df_units_sprit_Single_Location)
+
+        count_object_loc = obj_Location.AskCountOperator(mydb)
+
+        if(count_object_loc[0][0] < 1):
+            obj_Location.InsertSQLOperator(mydb)
         
-            #DataFrame is empty
-            else:
-                pass
-
-print(df_whole_sprit)
+        del obj_Location
 
 
 
 
-# The next additional way to bring new PLZ into the SQL table because the API-request is just SHIT 
+    # Now create Object and fill the sql
+    #print("-#------#--###--#--#--####----##---#-##-----#-##--#----#-#---###-------#-#-#--#--##----#----#----#--#-----###---#------#-#-###---")
+    #
 
-df_whole_sprit_PLZ_range = df_whole_sprit[[header_all_sprit[3],header_all_sprit[4]]]
-#print(df_whole_sprit_PLZ_range)
+    counter_Update=0
+    counter_Insert=0
 
-for i in range(len(df_whole_sprit_PLZ_range)):
-    #print(i)
-    df_units_sprit_Single = df_whole_sprit_PLZ_range.iloc[i,:]
+    for i in range(len(df_whole_sprit)):
+        #print(i)
+        df_Station_Single = df_whole_sprit.iloc[i,:]
 
-    #print(df_units_sprit_Single)
+        #print(df_Station_Single)
 
-    df_units_sprit_Single_PLZ = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[0]]
-    df_units_sprit_Single_Location = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[1]]
+        df_regions_sprit_Single_id = df_Station_Single[header_all_sprit[0]]
+        df_regions_sprit_Single_name = df_Station_Single[header_all_sprit[1]]
+        df_regions_sprit_Single_adress = df_Station_Single[header_all_sprit[2]]
+        df_regions_sprit_Single_postalCode = df_Station_Single[header_all_sprit[3]]
+        df_regions_sprit_Single_city = df_Station_Single[header_all_sprit[4]]
+        df_regions_sprit_Single_latitude = df_Station_Single[header_all_sprit[5]]
+        df_regions_sprit_Single_longitude = df_Station_Single[header_all_sprit[6]]
+        df_regions_sprit_Single_telephone = df_Station_Single[header_all_sprit[7]]
+        df_regions_sprit_Single_mail = df_Station_Single[header_all_sprit[8]]
+        df_regions_sprit_Single_website = df_Station_Single[header_all_sprit[9]]
+        df_regions_sprit_Single_service = df_Station_Single[header_all_sprit[10]]
+        df_regions_sprit_Single_selfService = df_Station_Single[header_all_sprit[11]]
+        df_regions_sprit_Single_open = df_Station_Single[header_all_sprit[12]]
+        df_regions_sprit_Single_fuelType = df_Station_Single[header_all_sprit[13]]
+        df_regions_sprit_Single_amount = df_Station_Single[header_all_sprit[14]]
+        df_regions_sprit_Single_label = df_Station_Single[header_all_sprit[15]]
+        df_regions_sprit_Single_Type = df_Station_Single[header_all_sprit[16]]
+        df_regions_sprit_Single_Code = df_Station_Single[header_all_sprit[17]]
 
-    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
-    obj_Location = Location(postCode=df_units_sprit_Single_PLZ, location=df_units_sprit_Single_Location)
-
-    count_object_loc = obj_Location.AskCountOperator(mydb)
-
-    if(count_object_loc[0][0] < 1):
-        obj_Location.InsertSQLOperator(mydb)
-    
-    del obj_Location
-
-
-
-
-# Now create Object and fill the sql
-#print("-#------#--###--#--#--####----##---#-##-----#-##--#----#-#---###-------#-#-#--#--##----#----#----#--#-----###---#------#-#-###---")
-#
-
-counter_Update=0
-counter_Insert=0
-
-for i in range(len(df_whole_sprit)):
-    #print(i)
-    df_Station_Single = df_whole_sprit.iloc[i,:]
-
-    #print(df_Station_Single)
-
-    df_regions_sprit_Single_id = df_Station_Single[header_all_sprit[0]]
-    df_regions_sprit_Single_name = df_Station_Single[header_all_sprit[1]]
-    df_regions_sprit_Single_adress = df_Station_Single[header_all_sprit[2]]
-    df_regions_sprit_Single_postalCode = df_Station_Single[header_all_sprit[3]]
-    df_regions_sprit_Single_city = df_Station_Single[header_all_sprit[4]]
-    df_regions_sprit_Single_latitude = df_Station_Single[header_all_sprit[5]]
-    df_regions_sprit_Single_longitude = df_Station_Single[header_all_sprit[6]]
-    df_regions_sprit_Single_telephone = df_Station_Single[header_all_sprit[7]]
-    df_regions_sprit_Single_mail = df_Station_Single[header_all_sprit[8]]
-    df_regions_sprit_Single_website = df_Station_Single[header_all_sprit[9]]
-    df_regions_sprit_Single_service = df_Station_Single[header_all_sprit[10]]
-    df_regions_sprit_Single_selfService = df_Station_Single[header_all_sprit[11]]
-    df_regions_sprit_Single_open = df_Station_Single[header_all_sprit[12]]
-    df_regions_sprit_Single_fuelType = df_Station_Single[header_all_sprit[13]]
-    df_regions_sprit_Single_amount = df_Station_Single[header_all_sprit[14]]
-    df_regions_sprit_Single_label = df_Station_Single[header_all_sprit[15]]
-    df_regions_sprit_Single_Type = df_Station_Single[header_all_sprit[16]]
-    df_regions_sprit_Single_Code = df_Station_Single[header_all_sprit[17]]
-
-    #print(df_regions_sprit_Single_Code)
-    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
-    obj_Station = Station(code=df_regions_sprit_Single_Code,
-    id=df_regions_sprit_Single_id,
-    name=df_regions_sprit_Single_name,
-    type=df_regions_sprit_Single_Type,
-    address=df_regions_sprit_Single_adress,
-     postalCode=df_regions_sprit_Single_postalCode,
-     city=df_regions_sprit_Single_city,
-    latitude=df_regions_sprit_Single_latitude,longitude=
-    df_regions_sprit_Single_longitude,
-    telephone=df_regions_sprit_Single_telephone,
-    mail=df_regions_sprit_Single_mail,
-    website=df_regions_sprit_Single_website,
-    service=df_regions_sprit_Single_service,
-    selfService=df_regions_sprit_Single_selfService,
-    open=df_regions_sprit_Single_open, 
-    fuelType=df_regions_sprit_Single_fuelType,
-    amount=df_regions_sprit_Single_amount,
-    label=df_regions_sprit_Single_label)
+        #print(df_regions_sprit_Single_Code)
+        #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+        obj_Station = Station(code=df_regions_sprit_Single_Code,
+        id=df_regions_sprit_Single_id,
+        name=df_regions_sprit_Single_name,
+        type=df_regions_sprit_Single_Type,
+        address=df_regions_sprit_Single_adress,
+        postalCode=df_regions_sprit_Single_postalCode,
+        city=df_regions_sprit_Single_city,
+        latitude=df_regions_sprit_Single_latitude,longitude=
+        df_regions_sprit_Single_longitude,
+        telephone=df_regions_sprit_Single_telephone,
+        mail=df_regions_sprit_Single_mail,
+        website=df_regions_sprit_Single_website,
+        service=df_regions_sprit_Single_service,
+        selfService=df_regions_sprit_Single_selfService,
+        open=df_regions_sprit_Single_open, 
+        fuelType=df_regions_sprit_Single_fuelType,
+        amount=df_regions_sprit_Single_amount,
+        label=df_regions_sprit_Single_label)
 
 
-    obj_Station.FuelId = obj_Station.GetFuelTypeID(mydb)[0][0]
-    obj_Station.PLZId = obj_Station.GetPlzID(mydb)[0][0]
-    obj_Station.RegionId = obj_Station.GetRegionID(mydb)[0][0]  
+        obj_Station.FuelId = obj_Station.GetFuelTypeID(mydb)[0][0]
+        obj_Station.PLZId = obj_Station.GetPlzID(mydb)[0][0]
+        obj_Station.RegionId = obj_Station.GetRegionID(mydb)[0][0]  
 
 
-    count_object_station = obj_Station.AskCountStation(mydb)
+        count_object_station = obj_Station.AskCountStation(mydb)
 
-    if(count_object_station[0][0] < 1):
-        counter_Insert = counter_Insert + 1
-        func_dump(obj_Station)
-        obj_Station.InsertSQLOperator(mydb)
-        print('---------------------------------------------')
+        if(count_object_station[0][0] < 1):
+            counter_Insert = counter_Insert + 1
+            #func_dump(obj_Station)
+            obj_Station.InsertSQLOperator(mydb)
+            #print('---------------------------------------------')
+        else:
+            counter_Update = counter_Update + 1
+            obj_Station.UpdateSQLOperator(mydb)
+        
+        del obj_Station
+
+    #print(" Insert ")
+    #print(counter_Insert)
+    #print("Update")
+    #print(counter_Update)
+
+    if(iq == 0):
+        df_testa = df_whole_sprit
     else:
-        counter_Update = counter_Update + 1
-        obj_Station.UpdateSQLOperator(mydb)
-    
-    del obj_Station
+        df_testb = df_whole_sprit
 
-print(" Insert ")
-print(counter_Insert)
-print("Update")
-print(counter_Update)
-
-
-
+print("'''''''''''''''''''         TEST                  '''''''''''''''''''''''''''''''")
+## Test where df-A is different as df-B
+df1_str_tuples = df_testa.astype(str).apply(tuple, 1)
+df2_str_tuples = df_testb.astype(str).apply(tuple, 1)
+df1_values_in_df2_filter = df1_str_tuples.isin(df2_str_tuples)
+df2_values_in_df1_filter = df2_str_tuples.isin(df1_str_tuples)
+df1_values_not_in_df2 = df_testa[~df1_values_in_df2_filter]
+df2_values_not_in_df1 = df_testb[~df2_values_in_df1_filter]
+print(df1_values_not_in_df2)
+print("########################################")
+print(df2_values_not_in_df1)
 
 
 
