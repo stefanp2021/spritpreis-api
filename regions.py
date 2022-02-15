@@ -2,6 +2,7 @@ from ctypes.wintypes import INT
 from email import header
 from multiprocessing.sharedctypes import Value
 from optparse import Values
+from queue import Empty
 #from tkinter.tix import AUTO
 from turtle import clear
 from xml.sax.xmlreader import Locator
@@ -28,7 +29,7 @@ from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.sql import *
 
 
-from Objects import Location, Region
+from Objects import Location, Region, Station
 
 
 #from sqlalchemy.orm import declarative_base
@@ -59,22 +60,7 @@ mydb = mysql.connector.connect(
 
 #engine = create_engine("mysql://{user}:{pw}@{host}/{db}".format(user=user, pw = password,host=host,db=database))
 
-print('-------------------------------------------')
-#print(engine)
 
-
-print('----')
-
-
-#query = db.select([table_Location]) 
-#ResultProxy = connection.execute(query)
-#ResultSet = ResultProxy.fetchall()
-#print(ResultSet)
-
-
-#Convert to dataframe
-#df_test = pd.DataFrame(ResultSet)
-#df_test.columns = ResultSet[0].keys()
 
 
 regions_url = 'https://api.e-control.at/sprit/1.0/regions'
@@ -97,7 +83,6 @@ def func_dump(obj):
 
 
 
-"""
 
 units_url = "https://api.e-control.at/sprit/1.0/regions/units"
 units_response=requests.get(units_url, headers=request_region_headers).json()
@@ -120,13 +105,17 @@ for i in range(len(get_location_info)):
     get_location_single = get_location_info[i]
 
     for j in range(len(get_location_single)):
-
+        
         get_location_single_elements = get_location_single[j]
         get_location_single_elements_g = get_location_single_elements["g"]
+        #print(get_location_single_elements_g)
+
 
         for k in range( len(get_location_single_elements_g)):
 
+            
             get_location_single_elements_g_length_element = get_location_single_elements_g[k]
+            
             get_location_single_first_g_length_n = get_location_single_elements_g_length_element["n"]
             get_location_single_first_g_length_p = get_location_single_elements_g_length_element["p"]
 
@@ -138,12 +127,7 @@ for i in range(len(get_location_info)):
 
 #df_units_sprit.reset_index(inplace=True,drop=True)
 df_units_sprit.reset_index(inplace=True)
-print(df_units_sprit)
-
-
-
-
-
+#print(df_units_sprit)
 
 for i in range(len(df_units_sprit)):
     #print(i)
@@ -164,9 +148,13 @@ for i in range(len(df_units_sprit)):
     
     del obj_Location
 
+print(" Finished first PLZ/Location Update")
+
+
 
 ############################################################################################################
-
+########                    URL for the Regions                     ###############
+############################################################################################################
 
 regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
 request_region_headers = {'Accept': 'application/json'}
@@ -179,8 +167,10 @@ complete_dataset=json_normalize(regions_response)
 
 #print(complete_dataset)
 
-list_useful_regions = ["code","type","name"]
+list_useful_regions = ["code","type","name","postalCodes","cities"]
+
 df_regions_complete_read = pd.DataFrame(columns=list_useful_regions)
+#df_Street_complete_Frame = pd.DataFrame(columns=list_useful_regions_CoordStreet)
 #print(df_regions_complete_read)
 
 
@@ -200,20 +190,115 @@ for j in range(len(complete_dataset)):
         regions_type = regions[list_useful_regions[1]]
         regions_name = regions[list_useful_regions[2]]
 
-        lstr=[[regions_code,regions_type,regions_name]]
+        
+        ##### This isn't necassery, but just to show, that we cannot easily build a table_street because there
+        ##### is no unique connection with the Station and the PostalCode/Cities and Name
+        
+        if(list_useful_regions[3] in regions.keys()):
+            regions_Coordpostcode = regions[list_useful_regions[3]]
+            regions_CoordCities = regions[list_useful_regions[4]]
+        else:
+            regions_Coordpostcode is None
+            regions_CoordCities is None
+
+
+        #print()
+        
+        lstr=[[regions_code,regions_type,regions_name,regions_Coordpostcode,regions_CoordCities]]
         df_new_entry=pd.DataFrame(lstr,columns=list_useful_regions)
         frames=[df_regions_complete_read,df_new_entry]
         df_regions_complete_read=pd.concat(frames)
 
     
 df_regions_complete_read.reset_index(inplace=True,drop=True)
-#print(df_regions_complete_read)
+df_regions_complete_Type = df_regions_complete_read[[list_useful_regions[0],list_useful_regions[1],list_useful_regions[2]]]
+#print(df_regions_complete_Type)
+df_regions_complete_CitiesStreet = df_regions_complete_read[[list_useful_regions[3],list_useful_regions[4]]]
+#print(df_regions_complete_CitiesStreet)
 
 
 
-for i in range(len(df_regions_complete_read)):
+
+# This is an additional way for taking new PLZ in the SQL-Database
+df_new_PostCityList_whole = pd.DataFrame(columns=df_regions_complete_CitiesStreet.columns)
+#print(df_new_PostList)
+for z in range(df_regions_complete_CitiesStreet.shape[0]):
+
+    get_location = df_regions_complete_CitiesStreet.iloc[z,:]
+    length_items = len(get_location[1])
+
+    get_loc_post = get_location[df_regions_complete_CitiesStreet.columns[0]]
+    get_loc_city = get_location[df_regions_complete_CitiesStreet.columns[1]]
+
+    #print(get_loc_post)
+    #print(get_loc_city)
+    #print(z)
+    #print("--")
+    for y in range(length_items):
+
+        #if(z == 35):
+        #    print(y)
+        #    print(get_loc_post)
+        #    print(get_loc_city)
+        NaNvalues = [None] * len(df_regions_complete_CitiesStreet.columns)
+        df_new_PostCity_forUpdate = pd.DataFrame(data=[NaNvalues],columns=(df_regions_complete_CitiesStreet.columns)) 
+
+        get_loc_post_single = get_loc_post[y]
+        get_loc_city_single = get_loc_city[y]
+
+        df_loc_post_update = pd.DataFrame(data=[get_loc_post_single],columns=[df_regions_complete_CitiesStreet.columns[0]],index=[0])
+        df_loc_city_update = pd.DataFrame(data=[get_loc_city_single],columns=[df_regions_complete_CitiesStreet.columns[1]],index=[0])
+
+        #print(df_loc_post_update)
+        #print(df_loc_city_update)
+        #print('------------------------')
+        #print(df_new_PostCity_forUpdate)
+
+        df_new_PostCity_forUpdate.update(df_loc_post_update)
+        df_new_PostCity_forUpdate.update(df_loc_city_update)
+
+        frames = [df_new_PostCityList_whole, df_new_PostCity_forUpdate]
+        df_new_PostCityList_whole = pd.concat(frames)
+
+
+#print(df_new_PostCityList_whole)
+
+
+
+#An additional to the additional above
+for i in range(len(df_new_PostCityList_whole)):
     #print(i)
-    df_regions_sprit_Single = df_regions_complete_read.iloc[i,:]
+    df_units_sprit_Single = df_new_PostCityList_whole.iloc[i,:]
+
+    #print(df_units_sprit_Single)
+
+    df_units_sprit_Single_PLZ = df_units_sprit_Single[df_new_PostCityList_whole.columns[0]]
+    df_units_sprit_Single_Location = df_units_sprit_Single[df_new_PostCityList_whole.columns[1]]
+
+    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+    obj_Location = Location(postCode=df_units_sprit_Single_PLZ, location=df_units_sprit_Single_Location)
+
+    count_object_loc = obj_Location.AskCountOperator(mydb)
+
+    if(count_object_loc[0][0] < 1):
+        obj_Location.InsertSQLOperator(mydb)
+    
+    del obj_Location
+
+
+print(" Finished with filling the Table PLZ ")
+
+
+
+
+
+
+
+
+
+for i in range(len(df_regions_complete_Type)):
+    #print(i)
+    df_regions_sprit_Single = df_regions_complete_Type.iloc[i,:]
 
     #print(df_units_sprit_Single)
 
@@ -233,90 +318,291 @@ for i in range(len(df_regions_complete_read)):
     
     del obj_Region
 
-
+print("Finished Code Search, now we search for Stations")
 
 ###############################################################################################################
 
 # And now the big SQL
 
-"""
 
 
 
-gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(101),type_pb="PB",fueltype="GAS")
-#gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
-request_gas_headers = {'Accept': 'application/json'}
-gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
-gas=json.dumps(gas_response)
-complete_dataset_gas=json_normalize(gas_response)
 
-print(complete_dataset_gas.keys())
-header_all_sprit = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "fuelType","amount","label"] 
+
+##### Insert the Stations of the different Regions
+
+
+#print(df_regions_complete_Type)
+
+
+header_all_sprit = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "fuelType","amount","label","Type","code"] 
 header_all_sprit_withoutpreis = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open", "prices"] 
-
-
 df_whole_sprit = pd.DataFrame(columns=(header_all_sprit))
+
+get_header_for_all_regions = list(df_regions_complete_Type.columns)
+get_code_for_regions = list(df_regions_complete_Type[get_header_for_all_regions[0]])
+#print(get_code_for_regions)
+    
+#gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(101),type_pb="PB",fueltype="GAS")
+#gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+#request_gas_headers = {'Accept': 'application/json'}
+#gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
+#gas=json.dumps(gas_response)
+#complete_dataset_gas=json_normalize(gas_response)
+
+#print(complete_dataset_gas.keys())
+
 
 #print(df_whole_sprit)
 #########################
 
-gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(101),type_pb="PB",fueltype="GAS")
-#gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
-request_gas_headers = {'Accept': 'application/json'}
-gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
-gas=json.dumps(gas_response)
-complete_dataset_gas=json_normalize(gas_response)
 
-lst_adding = []
-#list_var_select_header = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open","prices.fuelType","prices.amount","prices.label"]
 
-NaNvalues = [np.nan] * len(header_all_sprit)
-df_new_test = pd.DataFrame([NaNvalues],columns=(header_all_sprit))
-#print(df_new_test)
 
-for i in range(len(header_all_sprit_withoutpreis)):
+mycursor = mydb.cursor()
+sql = "SELECT fueltype FROM tbl_fueltype"
+mycursor.execute(sql)
+myresultFuel_count = mycursor.fetchall()
+mydb.commit()
 
-    reiter_name = header_all_sprit_withoutpreis[i]
-    var = complete_dataset_gas[reiter_name][0]
 
-    #print("reiter:   {a},   Value :    {b}    ".format(a = reiter_name, b = var))
-    #print("---------------------------------------------------------------")
-    if(reiter_name == header_all_sprit_withoutpreis[-1]):
-        #print(reiter_name)
-        #prices = var[0][0]
-        var = complete_dataset_gas[str(reiter_name)]
-        var_intro_keys = var[0]
-        var_prices_with_keys = var_intro_keys[0]
-        list_of_keys = list(var_prices_with_keys.keys())
-        #print('--')
-        #print(var)
-        #print('--')
-        #print(var)
-        #b = var[0]
-        #c= b[0]
-        #prices_key = list(var.keys())
-        #print('-----')
-        #print(c.keys())
-        #print(var_intro_keys.keys())
-        #print(list(var_intro_keys.keys()))
-        #print(var_prices_with_keys["fuelType"])
-        for j in list_of_keys:
-        #    print(j)
-            prices_key_value = var_prices_with_keys[j]
+lst_Type = ["PB","BL"]
 
-         #   print("reiter:   {a},   Value :    {b}    ".format(a = j, b = prices_key_value))
 
-            df_new_test_single = pd.DataFrame(data=[prices_key_value],columns=[j],index=[0])
-            print(df_new_test_single)
-            df_new_test.update(df_new_test_single)
+for k in get_code_for_regions:
+
+    for Insert_type in lst_Type:
+
+        for fut in myresultFuel_count:
+            
+            ft = fut[0]
+
+            gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(k),type_pb=Insert_type,fueltype=ft)
+            #gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+            request_gas_headers = {'Accept': 'application/json'}
+            gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
+            gas=json.dumps(gas_response)
+            complete_dataset_gas=json_normalize(gas_response)
+
+            lst_adding = []
+            #list_var_select_header = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open","prices.fuelType","prices.amount","prices.label"]
+
+            #NaNvalues = [np.nan] * len(header_all_sprit)
+            NaNvalues = [None] * len(header_all_sprit)
+            df_new_test = pd.DataFrame([NaNvalues],columns=(header_all_sprit))
+            #print(df_new_test)
+
         
+            #print(complete_dataset_gas)
+            if not complete_dataset_gas.empty:
+                #print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSS")
+            
+                #print(k)
+                #print(complete_dataset_gas)
+                
+                #Now we have to look how many rows there are
+
+                length_dataSet_Fuel = complete_dataset_gas.shape[0]
+                #print(complete_dataset_gas)
+                #print(length_dataSet_Fuel)
+                #print("---------------------------------------")
+                for r in range(length_dataSet_Fuel):
+                    #print(r)
+                    #print("---------------              STAGE 1             --------------------------")
+                    df_single_dataset_gas_g = complete_dataset_gas.iloc[r,:]
+                    df_single_dataset_gas = df_single_dataset_gas_g
+                    #print(type(df_single_dataset_gas))
+                    #print(df_single_dataset_gas)
+                    #print('---')
+                    #print(df_single_dataset_gas.columns.values)
+                    #print(df_single_dataset_gas.columns)
+                    #print(df_single_dataset_gas)
+                    #print("--")
+                    #print(df_single_dataset_gas["prices"])
+                    #print("-----------------------------------------")
+                    for i in range(len(header_all_sprit_withoutpreis)):
+                       
+                        reiter_name = header_all_sprit_withoutpreis[i]
+                        #print(reiter_name)
+                        #print(reiter_name)
+                        #print("---------------              STAGE 2             --------------------------")
+                        # Look if the column even exists in the dataframe
+                        if reiter_name in complete_dataset_gas.columns:
+
+                            #print("---------------              STAGE 3             --------------------------")
+                            #print(df_single_dataset_gas[reiter_name])
+                            var = df_single_dataset_gas[reiter_name]
+                            #print(var)
+                            if(type(var) is np.bool_):
+                                var = str(var)
+                            else:
+                                pass
+
+                            #print("reiter:   {a},   Value :    {b}    ".format(a = reiter_name, b = var))
+                            #print("---------------------------------------------------------------")
+                            if(reiter_name == header_all_sprit_withoutpreis[-1]):
+
+                                #print("---------------              STAGE 4             --------------------------")
+                                #print(reiter_name)
+                                #prices = var[0][0]
+                                #print(k)
+
+                                var = df_single_dataset_gas[str(reiter_name)]
+                                #print(var)
+                                var_intro_keys = var[0]
+                                
+                                #print(var_intro_keys)
+                                var_prices_with_keys = var_intro_keys
+                                list_of_keys = list(var_prices_with_keys.keys())
+                                for j in list_of_keys:
+
+                                    prices_key_value = var_prices_with_keys[j]
+                                    df_new_test_single = pd.DataFrame(data=[prices_key_value],columns=[j],index=[0])
+                                    df_new_test.update(df_new_test_single)
+                                    #print(df_new_test)
+                                
+                            else:
+
+                                #print("---------------              STAGE 5             --------------------------")
+                                #pass
+                                #print("---------------------------------------------------------------")
+                                #print(df_new_test)
+                                df_new_test_single = pd.DataFrame(data=[var],columns=[reiter_name],index=[0])
+                                df_new_test.update(df_new_test_single)
+                                #print(df_new_test)
+                                ### Here now we have to include the Type from the API request --> PB or BP
+
+
+                            
+                            df_new_test_Type = pd.DataFrame(data=[Insert_type],columns=["Type"],index=[0])
+                            df_new_test.update(df_new_test_Type)
+                            #print(df_new_test)
+                            df_new_test_code = pd.DataFrame(data=[str(k)],columns=["code"],index=[0])
+                            df_new_test.update(df_new_test_code)
+                            #print(df_new_test)
+                            #print('-----------------------------------------------------')
+                            #print(df_new_test)
+
+                        else:
+                            pass
+                        
+
+                    frames = [df_whole_sprit, df_new_test]
+                    df_whole_sprit = pd.concat(frames)
+
+        
+            #DataFrame is empty
+            else:
+                pass
+
+print(df_whole_sprit)
+
+
+
+
+# The next additional way to bring new PLZ into the SQL table because the API-request is just SHIT 
+
+df_whole_sprit_PLZ_range = df_whole_sprit[[header_all_sprit[3],header_all_sprit[4]]]
+#print(df_whole_sprit_PLZ_range)
+
+for i in range(len(df_whole_sprit_PLZ_range)):
+    #print(i)
+    df_units_sprit_Single = df_whole_sprit_PLZ_range.iloc[i,:]
+
+    #print(df_units_sprit_Single)
+
+    df_units_sprit_Single_PLZ = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[0]]
+    df_units_sprit_Single_Location = df_units_sprit_Single[df_whole_sprit_PLZ_range.columns[1]]
+
+    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+    obj_Location = Location(postCode=df_units_sprit_Single_PLZ, location=df_units_sprit_Single_Location)
+
+    count_object_loc = obj_Location.AskCountOperator(mydb)
+
+    if(count_object_loc[0][0] < 1):
+        obj_Location.InsertSQLOperator(mydb)
+    
+    del obj_Location
+
+
+
+
+# Now create Object and fill the sql
+#print("-#------#--###--#--#--####----##---#-##-----#-##--#----#-#---###-------#-#-#--#--##----#----#----#--#-----###---#------#-#-###---")
+#
+for i in range(len(df_whole_sprit)):
+    #print(i)
+    df_Station_Single = df_whole_sprit.iloc[i,:]
+
+    #print(df_Station_Single)
+
+    df_regions_sprit_Single_id = df_Station_Single[header_all_sprit[0]]
+    df_regions_sprit_Single_name = df_Station_Single[header_all_sprit[1]]
+    df_regions_sprit_Single_adress = df_Station_Single[header_all_sprit[2]]
+    df_regions_sprit_Single_postalCode = df_Station_Single[header_all_sprit[3]]
+    df_regions_sprit_Single_city = df_Station_Single[header_all_sprit[4]]
+    df_regions_sprit_Single_latitude = df_Station_Single[header_all_sprit[5]]
+    df_regions_sprit_Single_longitude = df_Station_Single[header_all_sprit[6]]
+    df_regions_sprit_Single_telephone = df_Station_Single[header_all_sprit[7]]
+    df_regions_sprit_Single_mail = df_Station_Single[header_all_sprit[8]]
+    df_regions_sprit_Single_website = df_Station_Single[header_all_sprit[9]]
+    df_regions_sprit_Single_service = df_Station_Single[header_all_sprit[10]]
+    df_regions_sprit_Single_selfService = df_Station_Single[header_all_sprit[11]]
+    df_regions_sprit_Single_open = df_Station_Single[header_all_sprit[12]]
+    df_regions_sprit_Single_fuelType = df_Station_Single[header_all_sprit[13]]
+    df_regions_sprit_Single_amount = df_Station_Single[header_all_sprit[14]]
+    df_regions_sprit_Single_label = df_Station_Single[header_all_sprit[15]]
+    df_regions_sprit_Single_Type = df_Station_Single[header_all_sprit[16]]
+    df_regions_sprit_Single_Code = df_Station_Single[header_all_sprit[17]]
+
+    #print(df_regions_sprit_Single_Code)
+    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+    obj_Station = Station(code=df_regions_sprit_Single_Code,
+    id=df_regions_sprit_Single_id,
+    name=df_regions_sprit_Single_name,
+    type=df_regions_sprit_Single_Type,
+    address=df_regions_sprit_Single_adress,
+     postalCode=df_regions_sprit_Single_postalCode,
+     city=df_regions_sprit_Single_city,
+    latitude=df_regions_sprit_Single_latitude,longitude=
+    df_regions_sprit_Single_longitude,
+    telephone=df_regions_sprit_Single_telephone,
+    mail=df_regions_sprit_Single_mail,
+    website=df_regions_sprit_Single_website,
+    service=df_regions_sprit_Single_service,
+    selfService=df_regions_sprit_Single_selfService,
+    open=df_regions_sprit_Single_open, 
+    fuelType=df_regions_sprit_Single_fuelType,
+    amount=df_regions_sprit_Single_amount,
+    label=df_regions_sprit_Single_label)
+
+
+    obj_Station.FuelId = obj_Station.GetFuelTypeID(mydb)[0][0]
+    #func_dump(obj_Station)
+    obj_Station.PLZId = obj_Station.GetPlzID(mydb)[0][0]
+    obj_Station.RegionId = obj_Station.GetRegionID(mydb)[0][0]  
+
+
+
+
+    count_object_station = obj_Station.AskCountStation(mydb)
+
+    if(id == 1448506):
+        func_dump(obj_Station)
+        print(count_object_station)
+    #print("###############################################################")
+
+ 
+
+ 
+
+    if(count_object_station[0][0] < 1):
+        obj_Station.InsertSQLOperator(mydb)
     else:
-        #pass
-        df_new_test_single = pd.DataFrame(data=[var],columns=[reiter_name],index=[0])
-        df_new_test.update(df_new_test_single)
+        obj_Station.UpdateSQLOperator(mydb)
+    
+    del obj_Station
 
-print(df_new_test)
-print(df_new_test.columns)
 
 
 
@@ -379,126 +665,247 @@ print(df_new_test.columns)
 
 
 
+# SicherheitsSave
 
+"""
+############################################################################################################
+########                    URL for the Regions                     ###############
+############################################################################################################
 
+regions_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+request_region_headers = {'Accept': 'application/json'}
+regions_response=requests.get(regions_url, headers=request_region_headers).json()
+regions=json.dumps(regions_response)
 
+#df_regions_sprit = pd.DataFrame(columns=("code","type","name"))
 
+complete_dataset=json_normalize(regions_response)
 
+#print(complete_dataset)
 
+list_useful_regions = ["code","type","name"]
+list_useful_regions_CoordStreet = ["name","postalCodes","cities"]
+df_regions_complete_read = pd.DataFrame(columns=list_useful_regions)
+df_Street_complete_Frame = pd.DataFrame(columns=list_useful_regions_CoordStreet)
+#print(df_regions_complete_read)
+
+
+for j in range(len(complete_dataset)):
+
+    df_Bundesland = complete_dataset.loc[j]
+    df_Bundesland_subregion =df_Bundesland["subRegions"]
+
+    #print(df_Bundesland)
+    
+    for i in range(len(df_Bundesland_subregion)):
+        regions = df_Bundesland_subregion[i]
+
+        #print(regions)
+
+        regions_code = regions[list_useful_regions[0]]
+        regions_type = regions[list_useful_regions[1]]
+        regions_name = regions[list_useful_regions[2]]
+
+        print("--------------------------")
+        #print(regions)
+        #print(regions.keys())
+        if(list_useful_regions_CoordStreet[1] in regions.keys()):
+            region_CoordName = regions[list_useful_regions_CoordStreet[0]]
+            regions_Coordpostcode = regions[list_useful_regions_CoordStreet[1]]
+            regions_Coordcities = regions[list_useful_regions_CoordStreet[2]]
+        else:
+            region_CoordName = regions[list_useful_regions_CoordStreet[0]]
+            regions_Coordpostcode is None
+            regions_Coordcities is None
+
+
+        #print()
+        
+        lstr=[[regions_code,regions_type,regions_name]]
+        df_new_entry=pd.DataFrame(lstr,columns=list_useful_regions)
+        frames=[df_regions_complete_read,df_new_entry]
+        df_regions_complete_read=pd.concat(frames)
+
+    
+df_regions_complete_read.reset_index(inplace=True,drop=True)
+print(df_regions_complete_read)
 
 
 """
 
 
 
-
-############################################################################################################################################################
-
-from sqlalchemy import create_engine, Column, Integer, String, Sequence, Float,PrimaryKeyConstraint, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.sql import *
-import os
-
-def connect_db():
-    db1 = create_engine("mysql+pymysql://{user}:{pw}@{host}/{db}".format(user=user, pw = password,host=host,db=database))
-    return db1
-Base = declarative_base()
-
-class PointsOfInterest(Base):
-    __tablename__ = "points_of_interest"
-    poi_id = Column(Integer, Sequence('poi_id_seq'), primary_key=True)
-    name = Column(String)
-    build_year = Column(String)
-    demolished_year = Column(String)
-    address = Column(String)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    external_url = Column(String)
-    image_url = Column(String)
-    heritage_status = Column(String)
-    current_use = Column(String)
-    poi_type = Column(String)
-    source = Column(String)
-    details = Column(String)
-    #Defining One to Many relationships with the relationship function on the Parent Table
-    styles = relationship('ArchitecturalStyles', backref = 'points_of_interest',lazy=True,cascade="all, delete-orphan")
-    architects = relationship('Architects', backref = 'points_of_interest', lazy=True,cascade="all, delete-orphan")
-    categories = relationship('POICategories', backref = 'points_of_interest', lazy=True,cascade="all, delete-orphan")
-class ArchitecturalStyles(Base):
-    __tablename__="architectural_styles"
-    __table_args__ = (
-        PrimaryKeyConstraint('poi_id', 'style'),
-    )
-    poi_id =Column(Integer,ForeignKey('points_of_interest.poi_id'))
-    #Defining the Foreign Key on the Child Table
-    style = Column(String)
-class Architects(Base):
-    __tablename__="architects"
-    __table_args__ = (
-        PrimaryKeyConstraint('poi_id', 'architect_name'),
-    )
-    poi_id= Column(Integer,ForeignKey('points_of_interest.poi_id'))
-    architect_name = Column(String)
-class POICategories(Base):
-    __tablename__="poi_categories"
-    __table_args__ = (
-        PrimaryKeyConstraint('poi_id', 'category'),
-    )
-    poi_id =Column(Integer,ForeignKey('points_of_interest.poi_id'))
-    category = Column(String)
-engine = connect_db()
-PointsOfInterest.__table__.create(bind=engine, checkfirst=True)
-ArchitecturalStyles.__table__.create(bind=engine, checkfirst=True)
-Architects.__table__.create(bind=engine, checkfirst=True)
-POICategories.__table__.create(bind=engine, checkfirst=True)
 """
-####################################################################################################################
-"""
-
-engine = db.create_engine("mysql+pymysql://{user}:{pw}@{host}/{db}".format(user=user, pw = password,host=host,db=database))
-
-connection = engine.connect()
-metadata = db.MetaData()
-table_Location = db.Table('tbl_Location', metadata, autoload=True, autoload_with=engine)
-table_keys = repr(metadata.tables['tbl_Location'])
-
-# Print the column names
-#print(table_Location.columns.keys())
-# Print full table metadata
-#print()
-
-query = db.update(table_Location)
-
-
-df_units_sprit.to_sql(
-    'tbl_Location',
-    con=engine,
-    if_exists='replace',
-    index=False,
-    Location_ID =db.column()
-
-    #keys="Location_ID",
-    #chunksize=500,
-    #dtype={
-    #    "Location_ID": INTEGER,
-    #    "Location": VARCHAR(200),
-    #    "PLZ": Integer
-    #},
-    #PRIMARY KEY ("Location_ID")
-)
-
-ResultProxy = connection.execute(query,df_units_sprit)
-
-#############################################################################################################################################
+SicherheitsSave
 
 
 
-"""
 
 
-################################################################################################################################
 
+for k in get_code_for_regions:
+
+    gasstation_url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=str(k),type_pb=Insert_type,fueltype="GAS")
+    #gasstation_url = 'https://api.e-control.at/sprit/1.0/regions?includeCities=true'
+    request_gas_headers = {'Accept': 'application/json'}
+    gas_response=requests.get(gasstation_url, headers=request_gas_headers).json()
+    gas=json.dumps(gas_response)
+    complete_dataset_gas=json_normalize(gas_response)
+
+    lst_adding = []
+    #list_var_select_header = ["id","name","location.address","location.postalCode","location.city","location.latitude","location.longitude","contact.telephone","contact.mail","contact.website","offerInformation.service","offerInformation.selfService","open","prices.fuelType","prices.amount","prices.label"]
+
+    #NaNvalues = [np.nan] * len(header_all_sprit)
+    NaNvalues = [None] * len(header_all_sprit)
+    df_new_test = pd.DataFrame([NaNvalues],columns=(header_all_sprit))
+    #print(df_new_test)
+
+   
+    #print(type(complete_dataset_gas))
+    if not complete_dataset_gas.empty:
+        #print("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSSSS")
+    
+        #print(k)
+        print(complete_dataset_gas)
+        for i in range(len(header_all_sprit_withoutpreis)):
+
+            reiter_name = header_all_sprit_withoutpreis[i]
+            #print(reiter_name)
+
+            # Look if the column even exists in the dataframe
+            if reiter_name in complete_dataset_gas.columns:
+                var = complete_dataset_gas[reiter_name][0]
+
+                if(type(var) is np.bool_):
+                    var = str(var)
+                else:
+                    pass
+
+                #print("reiter:   {a},   Value :    {b}    ".format(a = reiter_name, b = var))
+                #print("---------------------------------------------------------------")
+                if(reiter_name == header_all_sprit_withoutpreis[-1]):
+                    #print(reiter_name)
+                    #prices = var[0][0]
+                    print(k)
+
+                    var = complete_dataset_gas[str(reiter_name)]
+                    #print(var)
+                    var_intro_keys = var[0]
+                    
+
+                    var_prices_with_keys = var_intro_keys[0]
+                    list_of_keys = list(var_prices_with_keys.keys())
+                    for j in list_of_keys:
+
+                        prices_key_value = var_prices_with_keys[j]
+                        df_new_test_single = pd.DataFrame(data=[prices_key_value],columns=[j],index=[0])
+                        df_new_test.update(df_new_test_single)
+                    
+                else:
+                    #pass
+                    #print("---------------------------------------------------------------")
+                    #print(df_new_test)
+                    df_new_test_single = pd.DataFrame(data=[var],columns=[reiter_name],index=[0])
+                    df_new_test.update(df_new_test_single)
+                    ### Here now we have to include the Type from the API request --> PB or BP
+                df_new_test_Type = pd.DataFrame(data=[Insert_type],columns=["Type"],index=[0])
+                df_new_test.update(df_new_test_Type)
+                df_new_test_code = pd.DataFrame(data=[str(k)],columns=["code"],index=[0])
+                df_new_test.update(df_new_test_code)
 
 
     
+
+                #print(df_new_test)
+                #concat
+                
+
+            else:
+                pass
+            
+
+        frames = [df_whole_sprit, df_new_test]
+        df_whole_sprit = pd.concat(frames)
+
+    
+    #DataFrame is empty
+    else:
+        pass
+
+print(df_whole_sprit)
+
+
+
+# Now create Object and fill the sql
+print("-#------#--###--#--#--####----##---#-##-----#-##--#----#-#---###-------#-#-#--#--##----#----#----#--#-----###---#------#-#-###---")
+#
+for i in range(len(df_new_test)):
+    #print(i)
+    df_Station_Single = df_new_test.iloc[i,:]
+
+    #print(df_units_sprit_Single)
+
+    df_regions_sprit_Single_id = df_Station_Single[header_all_sprit[0]]
+    df_regions_sprit_Single_name = df_Station_Single[header_all_sprit[1]]
+    df_regions_sprit_Single_adress = df_Station_Single[header_all_sprit[2]]
+    df_regions_sprit_Single_postalCode = df_Station_Single[header_all_sprit[3]]
+    df_regions_sprit_Single_city = df_Station_Single[header_all_sprit[4]]
+    df_regions_sprit_Single_latitude = df_Station_Single[header_all_sprit[5]]
+    df_regions_sprit_Single_longitude = df_Station_Single[header_all_sprit[6]]
+    df_regions_sprit_Single_telephone = df_Station_Single[header_all_sprit[7]]
+    df_regions_sprit_Single_mail = df_Station_Single[header_all_sprit[8]]
+    df_regions_sprit_Single_website = df_Station_Single[header_all_sprit[9]]
+    df_regions_sprit_Single_service = df_Station_Single[header_all_sprit[10]]
+    df_regions_sprit_Single_selfService = df_Station_Single[header_all_sprit[11]]
+    df_regions_sprit_Single_open = df_Station_Single[header_all_sprit[12]]
+    df_regions_sprit_Single_fuelType = df_Station_Single[header_all_sprit[13]]
+    df_regions_sprit_Single_amount = df_Station_Single[header_all_sprit[14]]
+    df_regions_sprit_Single_label = df_Station_Single[header_all_sprit[15]]
+    df_regions_sprit_Single_Type = df_Station_Single[header_all_sprit[16]]
+    df_regions_sprit_Single_Code = df_Station_Single[header_all_sprit[17]]
+
+    #print(df_regions_sprit_Single_Code)
+    #print(df_units_sprit_Single_PLZ, df_units_sprit_Single_Location )
+    obj_Station = Station(code=df_regions_sprit_Single_Code,
+    id=df_regions_sprit_Single_id,
+    name=df_regions_sprit_Single_name,
+    type=df_regions_sprit_Single_Type,
+    address=df_regions_sprit_Single_adress,
+     postalCode=df_regions_sprit_Single_postalCode,
+     city=df_regions_sprit_Single_city,
+    latitude=df_regions_sprit_Single_latitude,longitude=
+    df_regions_sprit_Single_longitude,
+    telephone=df_regions_sprit_Single_telephone,
+    mail=df_regions_sprit_Single_mail,
+    website=df_regions_sprit_Single_website,
+    service=df_regions_sprit_Single_service,
+    selfService=df_regions_sprit_Single_selfService,
+    open=df_regions_sprit_Single_open, 
+    fuelType=df_regions_sprit_Single_fuelType,
+    amount=df_regions_sprit_Single_amount,
+    label=df_regions_sprit_Single_label)
+
+    count_object_station = obj_Station.AskCountOperator(mydb)
+
+    
+    print("###############################################################")
+    obj_Station.FuelId = obj_Station.GetFuelTypeID(mydb)[0][0]
+    obj_Station.PLZId = obj_Station.GetPlzID(mydb)[0][0]
+    obj_Station.RegionId = obj_Station.GetRegionID(mydb)[0][0]
+
+
+  
+    #func_dump(obj_Station)
+
+    if(count_object_station[0][0] < 1):
+        obj_Station.InsertSQLOperator(mydb)
+    else:
+        obj_Station.UpdateSQLOperator(mydb)
+    
+    del obj_Station
+
+
+
+
+
+"""

@@ -22,11 +22,45 @@ class Location:
 
 
     def InsertSQLOperator(self,connector):
-        mycursor = connector.cursor()
-        sql = "INSERT INTO tbl_Location (PLZ,Location) VALUES (%s, %s)"
-        val = (self.postCode, self.location)
-        mycursor.execute(sql,val)
-        connector.commit()
+
+        if(self.postCode is None and self.location is None):
+            mycursor = connector.cursor()
+            sql = "SELECT COUNT(*) FROM tbl_Location WHERE PLZ IS NULL AND Location IS NULL"
+            mycursor.execute(sql)
+            myresult_count = mycursor.fetchall()
+            connector.commit()
+            if (myresult_count[0][0] < 1):
+                mycursor = connector.cursor()
+                sql = "INSERT INTO tbl_Location (PLZ,Location) VALUES (%s, %s)"
+                val = (self.postCode, self.location)
+                mycursor.execute(sql,val)
+                connector.commit()
+            else:
+                pass
+            
+        else:
+
+            if(self.location is None):
+                mycursor = connector.cursor()
+                sql = "SELECT COUNT(*) FROM tbl_Location WHERE PLZ =%s AND Location IS NULL"
+                val = (self.postCode,)
+                mycursor.execute(sql,val)
+                myresult_count = mycursor.fetchall()
+                connector.commit()
+                if (myresult_count[0][0] < 1):
+                    mycursor = connector.cursor()
+                    sql = "INSERT INTO tbl_Location (PLZ,Location) VALUES (%s, %s)"
+                    val = (self.postCode, self.location)
+                    mycursor.execute(sql,val)
+                    connector.commit()
+                else:
+                    pass
+            else:
+                mycursor = connector.cursor()
+                sql = "INSERT INTO tbl_Location (PLZ,Location) VALUES (%s, %s)"
+                val = (self.postCode, self.location)
+                mycursor.execute(sql,val)
+                connector.commit()
  
 
     def __del__(self):
@@ -76,10 +110,12 @@ class Region:
 class Station:
 
     species = "Station name"
-    def __init__(self, id, name, address, postalCode, city, latitude,longitude, telephone, mail, website,service, selfService, open, fuelType,amount, label ):
+    def __init__(self, code, id, name, type, address, postalCode, city, latitude,longitude, telephone, mail, website,service, selfService, open, fuelType,amount, label ):
 
+        self.code = code
         self.id = id
         self.name = name
+        self.type = type
         self.address = address
         self.postCode = postalCode
         self.city = city
@@ -98,11 +134,12 @@ class Station:
         self.PLZId = ""
         self.RegionId = ""
 
-    def AskCountOperator(self, connector):
+    def AskCountStation(self, connector):
         mycursor = connector.cursor()
 
-        sql = "SELECT COUNT(*) FROM tbl_Station WHERE StationID = %s"
-        val = (self.id,)
+        sql = "SELECT COUNT(*) FROM tbl_Station WHERE StationID = %s AND Type=%s AND fueltype_Id=%s"
+
+        val = (self.id,self.type,self.FuelId)
         mycursor.execute(sql,val)
         myresult_count = mycursor.fetchall()
         connector.commit()
@@ -111,30 +148,54 @@ class Station:
 
     def InsertSQLOperator(self,connector):
         mycursor = connector.cursor()
-        sql = "INSERT INTO tbl_Station (station_id,station_name,station_adress,Plz_Id,latitiude,longitude,telephone,mail,website,service,selfService,open,fueltype_Id,amount,label,Region_Id) VALUES (%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s)"
+        sql = "INSERT INTO tbl_Station (StationID,station_name,station_adress,Plz_Id,latitiude,longitude,telephone,mail,website,service,selfService,open,fueltype_Id,amount,label,Region_Id, Type) VALUES (%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s)"
         val = (self.id, self.name, self.address, self.PLZId, self.latitude, self.longitude, self.telephone, self.mail, self.website, self.service, self.selfService, self.open,
-        self.FuelId, self.amount, self.label, self.RegionId)
+        self.FuelId, self.amount, self.label, self.RegionId, self.type)
         mycursor.execute(sql,val)
         connector.commit()
  
 
     def UpdateSQLOperator(self,connector):
         mycursor = connector.cursor()
-        sql = "UPDATE tbl_Station SET station_name=%s, station_adress=%s, Plz_Id =%s ,latitiude=%s ,longitude =%s,telephone =%s,mail =%s,website=%s,service=%s,selfService=%s,open=%s,fueltype_Id=%s,amount=%s,label=%s,Region_Id=%s WHERE station_id=%s"
+        sql = "UPDATE tbl_Station SET station_name=%s, station_adress=%s, Plz_Id =%s ,latitiude=%s ,longitude =%s,telephone =%s,mail =%s,website=%s,service=%s,selfService=%s,open=%s,fueltype_Id=%s,amount=%s,label=%s,Region_Id=%s, Type=%s WHERE StationID=%s"
         val = (self.name, self.address, self.PLZId, self.latitude, self.longitude, self.telephone, self.mail, self.website, self.service, self.selfService,
-        self.open, self.FuelId, self.amount, self.label, self.RegionId)
+        self.open, self.FuelId, self.amount, self.label, self.RegionId,self.type, self.id)
         mycursor.execute(sql,val)
         connector.commit()
 
 
     def GetPlzID(self, connector):
-        pass
+
+        mycursor = connector.cursor()
+
+        plz_streetid = "SELECT Location_ID FROM tbl_Location WHERE PLZ=%s and Location=%s"
+        var = (self.postCode, self.city)
+        mycursor.execute(plz_streetid, var)
+        myresult_plzID = mycursor.fetchall()
+        connector.commit()
+        return(myresult_plzID)
 
     def GetRegionID(self, connector):
-        pass
+        
+        mycursor = connector.cursor()
+
+        region_id = "SELECT region_ID FROM tbl_spritregions WHERE region_Code=%s and region_Type=%s"
+        var = (self.code,self.type)
+        mycursor.execute(region_id, var)
+        myresult_regionID = mycursor.fetchall()
+        connector.commit()
+        return(myresult_regionID)
 
     def GetFuelTypeID(self, connector):
-        pass
+        
+        mycursor = connector.cursor()
+
+        fuelid = "SELECT Fueltype_ID FROM tbl_fueltype WHERE fueltype=%s"
+        var = (self.fuelType,)
+        mycursor.execute(fuelid, var)
+        myresult_fuelID = mycursor.fetchall()
+        connector.commit()
+        return(myresult_fuelID)
 
     def __del__(self):
         pass
