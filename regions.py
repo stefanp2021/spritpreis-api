@@ -152,70 +152,19 @@ header_all_sprit_withoutpreis = ["id","name","location.address","location.postal
 #df_whole_sprit = pd.DataFrame(columns=(header_all_sprit))
 
 
-"""
-counter = 0
-for i in tqdm(range(len(myresult_fetchRegions))):
-    value_region_code = str(myresult_fetchRegions[i][0])
-    #print(value_region_code)
-    for j in range(len(myresult_fetchTypes)):
-        value_type_code = myresult_fetchTypes[j][0]
-        #print(value_type_code)
-        for k in range(len(myresult_fetchFuelTypes)):
-            value_fueltype_code = myresult_fetchFuelTypes[k][0]
-            #print(value_fueltype_code)
-            #print("---------------------------------")
-            #print(value_type_code)
-
-            #'Vorbereitung'
-            Station_Url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=value_region_code,type_pb=value_type_code,fueltype=value_fueltype_code)
- 
-            request_Station_headers = {'Accept': 'application/json'}
-            Station_response=requests.get(Station_Url, headers=request_Station_headers).json()
-            #Stationsvalues=json.dumps(Station_response)
-            complete_dataset_Station=json_normalize(Station_response)
-
-            if not complete_dataset_Station.empty:
-                
-                print(value_type_code)
-                print(complete_dataset_Station["prices"])
-                print("---------------------------")
-
-                length_dataSet_Fuel = complete_dataset_Station.shape[0]
-                for r in range(length_dataSet_Fuel):
-                    counter = counter + 1
-print(counter)
-
-"""
-
 actual_dateTime = datetime.now().isoformat(sep=' ', timespec='milliseconds')
 #print(actual_dateTime)
 
-##### Später wird das dazugeschalten
-
-#counter = 0
-#counter_full = 0
-#list_wasted_regions_gas = []
-#list_wasted_regions_die = []
-#list_wasted_regions_sup = []
-#count_empty = 0
 
 for i in tqdm(range(len(myresult_fetchRegions))):
     #print(i)
     value_region_code = str(myresult_fetchRegions[i][0])
-    #print(value_region_code)
-    #print("------")
-    #print(value_region_code)
     for j in range(len(myresult_fetchTypes)):
         value_type_code = myresult_fetchTypes[j][0]
-        #print(value_type_code)
-        #print("---")
-        #print(value_type_code)
+
         for k in range(len(myresult_fetchFuelTypes)):
             value_fueltype_code = myresult_fetchFuelTypes[k][0]
-            #print(value_fueltype_code)
-            #print(value_fueltype_code)
 
-            #counter = counter + 1
 
             #'Vorbereitung'
             Station_Url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-region?code={gcode}&type={type_pb}&fuelType={fueltype}&includeClosed=true".format(gcode=value_region_code,type_pb=value_type_code,fueltype=value_fueltype_code)
@@ -272,8 +221,6 @@ for i in tqdm(range(len(myresult_fetchRegions))):
                                 df_new_Station.update(df_new_values_single)
 
                             #Update the new Station with the Type that is used
-                            #value_type_code = "PB"
-                            #value_region_code = "920"
                             df_new_Type = pd.DataFrame(data=[value_type_code],columns=[header_all_sprit[-4]],index=[0])
                             df_new_Station.update(df_new_Type)
                             #Update the new Station with the RegionCode that is used
