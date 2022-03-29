@@ -27,7 +27,7 @@ from tqdm import tqdm
 
 import mysql.connector
 
-
+a=9
 
 from Objects import Location, Region, Station, SType, StationUpdate
 
