@@ -1,6 +1,5 @@
 #Needed packages and Links
 
-a = 0
 
 from ctypes.wintypes import INT
 from email import header
@@ -27,8 +26,6 @@ from tqdm import tqdm
 
 import mysql.connector
 
-a=9
-a=10
 
 from Objects import Location, Region, Station, SType, StationUpdate
 
