@@ -1,5 +1,7 @@
 #Needed packages and Links
 
+a = 0
+
 from ctypes.wintypes import INT
 from email import header
 from multiprocessing.sharedctypes import Value
