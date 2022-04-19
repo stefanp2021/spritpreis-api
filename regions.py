@@ -27,7 +27,7 @@ from tqdm import tqdm
 import mysql.connector
 
 
-from Objects import Location, Region, Station, SType, StationUpdate
+from sqlobject import Location, Region, Station, SType, StationUpdate
 
 try:
     mydb = mysql.connector.connect(
