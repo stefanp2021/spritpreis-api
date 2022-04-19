@@ -21,6 +21,9 @@ from datetime import datetime
 from datetime import timedelta
 import time
 
+#from urllib import request, response
+#from requests.auth import HTTPBasicAuth
+
 import tqdm
 from tqdm import tqdm
 
@@ -28,6 +31,10 @@ import mysql.connector
 
 
 from sqlobject import Location, Region, Station, SType, StationUpdate
+
+ping_url = 'https://api.e-control.at/sprit/1.0/ping'
+request_headers = {'Accept': 'text/plain'}
+ping_response=requests.get(ping_url, headers=request_headers).content
 
 try:
     mydb = mysql.connector.connect(
