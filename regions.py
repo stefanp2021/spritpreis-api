@@ -38,7 +38,7 @@ ping_response=requests.get(ping_url, headers=request_headers).content
 
 try:
     mydb = mysql.connector.connect(
-            host="dev.muenzer.at",
+            host="192.168.10.21",
             user="spritpreise",
             password ="]4e6H[tZCQc.YoY,S6jK",
             database="spritpreise"
