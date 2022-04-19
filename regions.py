@@ -27,10 +27,10 @@ from tqdm import tqdm
 import mysql.connector
 
 
-from Objects import Location, Region, Station, SType, StationUpdate
+from sqlobject import Location, Region, Station, SType, StationUpdate
 
 mydb = mysql.connector.connect(
-        host="dev.muenzer.at",
+        host="192.168.10.21",
         user="spritpreise",
         password ="]4e6H[tZCQc.YoY,S6jK",
         database="spritpreise"
