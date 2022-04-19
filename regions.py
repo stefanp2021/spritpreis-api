@@ -7,7 +7,7 @@ from multiprocessing.sharedctypes import Value
 from optparse import Values
 from queue import Empty
 from time import sleep, time
-from turtle import clear
+#from turtle import clear
 from weakref import WeakSet
 from xml.sax.xmlreader import Locator
 import numpy as np
