@@ -339,7 +339,7 @@ myresult_fetchStatus_Inactive = mycursor.fetchall()
 mycursor.close()
 mydb.commit()
 inactive_value_DB = myresult_fetchStatus_Inactive[0][0]
-print(inactive_value_DB)
+print("Stations set to inactive: {}".format(inactive_value_DB))
 
 mycursor = mydb.cursor()
 sql_update_inactive_status = "SELECT StationID,fueltype_Id,Type_Id,DateTime FROM tbl_Station WHERE Status_Id <> %s" #every station that is not inactive
