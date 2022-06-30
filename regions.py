@@ -6,8 +6,9 @@ from email import header
 from multiprocessing.sharedctypes import Value
 from optparse import Values
 from queue import Empty
+import sys
 from time import sleep, time
-from turtle import clear
+#from turtle import clear
 from weakref import WeakSet
 from xml.sax.xmlreader import Locator
 import numpy as np
@@ -20,24 +21,42 @@ import datetime
 from datetime import datetime
 from datetime import timedelta
 import time
+import datetime
+#from urllib import request, response
+#from requests.auth import HTTPBasicAuth
 
 import tqdm
 from tqdm import tqdm
 
 import mysql.connector
 
+#has program been running today already?
+try:
+    with open('lastdate.txt') as f:
+        lastdate = f.read().strip()
+    if lastdate == datetime.date.today().strftime('%Y-%m-%d'):
+        print("Already ran today, will exit now!")
+        sys.exit(1)
+except FileNotFoundError:
+    pass
+
+
 
 from sqlobject import Location, Region, Station, SType, StationUpdate
 
+ping_url = 'https://api.e-control.at/sprit/1.0/ping'
+request_headers = {'Accept': 'text/plain'}
+ping_response=requests.get(ping_url, headers=request_headers).content
+
 try:
     mydb = mysql.connector.connect(
-            host="dev.muenzer.at",
+            host="192.168.10.21",
             user="spritpreise",
             password ="]4e6H[tZCQc.YoY,S6jK",
             database="spritpreise"
         )
-except:
-    print("No connection to Server possible")
+except Exception as e:
+    print("Connection to server failed. Error: {}".format(e))
 
 #regions_url = 'https://api.e-control.at/sprit/1.0/regions'
 request_region_headers = {'Accept': 'application/json'}
@@ -71,8 +90,8 @@ units_complete_dataset=json_normalize(units_response)
 #df_new_PostCity_forUpdate = pd.DataFrame(data=[NaNvalues],columns=(df_regions_complete_CitiesStreet.columns)) 
 
 
-
-print("Starting with the API request for the regions")
+#status-message:
+print("Starting API Request for Regions")
 
 try:
 
@@ -114,15 +133,16 @@ try:
                 else:
                     pass
                 del obj_Location
-except:
-    print("Reading from API not possible")
+except Exception as e:
+    print("Error: Reading from API not possible: {}".format(e))
 
-
-print("Regions are inserted in the SQL-Database")
+#status-message:
+print("Completed inserting regions into database")
 
 
 #####################################        Insert the Stations of the different Regions       ########################
-print("Now starting with the Stations")
+#status-message:
+print("Starting insert of stations into the database")
 
 
 
@@ -319,16 +339,18 @@ try:
 
                 else:
                     pass
-except:
-    print("Stations couldn't be read")
+except Exception as e:
+    print("Error: Couldn't read stations: ", e)
 
-print(" API for Stations over all Fueltypes are finished and inserted/updated on the MySQL-Database")
+print(" Completed API Request for Stations and all Fueltypes. Completed Database insert/update")
+
 
 ############################################################################
 #########                   Abfrage nach inaktiven Stationen
 
 #################################################################################
-print("Now starting with the control of inactive Stations (if no change over 4 days)")
+#status-message:
+print("Checking for inactive stations, that have not been updated in the last 4 days")
 
 
 mycursor = mydb.cursor()
@@ -339,7 +361,8 @@ myresult_fetchStatus_Inactive = mycursor.fetchall()
 mycursor.close()
 mydb.commit()
 inactive_value_DB = myresult_fetchStatus_Inactive[0][0]
-print(inactive_value_DB)
+#status-message:
+print("Stations set to inactive: {}".format(inactive_value_DB))
 
 mycursor = mydb.cursor()
 sql_update_inactive_status = "SELECT StationID,fueltype_Id,Type_Id,DateTime FROM tbl_Station WHERE Status_Id <> %s" #every station that is not inactive
@@ -372,5 +395,9 @@ for i in tqdm(range(len(myresult_UpdateInactiveStatus))):
   
     del obj_StationUpdate
 
+#status-message:
+print("Regions Update completed. The Program will exit now!")
 
-print("finished with the job")
+#check if data was recently updated
+with open('lastdate.txt', 'w') as f:
+    f.write(datetime.date.today().strftime('%Y-%m-%d'))
